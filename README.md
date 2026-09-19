@@ -144,8 +144,7 @@ test.sh                 Example evaluation command
 
 ## Notes
 
-The current implementation expects `noise_utils.py` to provide
-`add_noise_to_tensor`, as imported by `main.py`. Make sure this module is
+Make sure this module is
 available in the repository or on `PYTHONPATH` before running the code.
 
 ## License
