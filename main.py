@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 import argparse
-import random
 import yaml
 import torch
 from torch.optim import AdamW
@@ -18,16 +17,8 @@ from tqdm import tqdm
 from dataset import read_dfdcp, read_dfd, read_wild, read_cdfv2
 from dataset.read_ff import get_3_loader as ffpp_get_3_loader
 from modules.model import RECC
-from noise_utils import add_noise_to_tensor
 
 e_data = []
-
-def set_global_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
 
 def get_extra_data_path(path):
     pics = next(os.walk(path))[2]
@@ -59,13 +50,6 @@ def get_img(path, transform):
                 common_img.append(img)
                 break
     return common_img
-
-def apply_tensor_noise(images, noise_prob=0.3, noise_level=0.1):
-    if torch.rand(1).item() < noise_prob:
-        noise_types = ['gaussian', 'uniform']
-        noise_type = np.random.choice(noise_types)
-        return add_noise_to_tensor(images, noise_type, noise_level)
-    return images
 
 def train(model, train_loader, valid_loader, optimizer, epochs, transform=None, save_path="log/commd.pth"):
     scheduler = ReduceLROnPlateau(
@@ -296,7 +280,7 @@ def parse_args():
     p.add_argument('-valset', '--valset', type=str, default='cdfv2', choices=['ffpp','cdfv2','dfdcp','dfd','wild'], help='Validation dataset key')
     p.add_argument('-testset', '--testset', type=str, default='cdfv2', choices=['ffpp','cdfv2','dfdcp','dfd','wild'], help='Test dataset key')
     p.add_argument('-epochs', '--epochs', type=int, default=30)
-    p.add_argument('-save_path', '--save_path', type=str, default='log/best_model_with_train_all.pth')
+    p.add_argument('-save_path', '--save_path', type=str, default='weights/best_model.pth')
     p.add_argument('-device', '--device', type=str, default='cuda')
     p.add_argument('-seed', '--seed', type=int, default=42)
     p.add_argument('-extra_data', '--extra_data', type=str, default=None, help='Path to extra/crop images for e_data')
@@ -340,9 +324,11 @@ def main():
     args = parse_args()
     cfg = load_config(args.config)
 
+    torch.backends.cudnn.benchmark = True
     if args.device == 'cuda' and not torch.cuda.is_available():
         raise RuntimeError("CUDA requested but not available.")
-    set_global_seed(args.seed)
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
 
     extra_data_root = args.extra_data or cfg['paths'].get('extra_data_root', None)
     if extra_data_root:
@@ -360,8 +346,10 @@ def main():
         transforms.ToTensor(),
     ])
 
+    trainset_key = None if args.test_only else args.trainset
+    valset_key = None if args.test_only else args.valset
     train_loader, val_loader, test_loader = build_loaders(
-        args.trainset, args.valset, args.testset,
+        trainset_key, valset_key, args.testset,
         paths=cfg['paths'],
         batch_size=cfg.get('batch_size', 16),
         num_workers=cfg.get('num_workers', 8),
