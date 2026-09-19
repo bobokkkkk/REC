@@ -110,10 +110,32 @@ python main.py \
   --testset cdfv2 \
   --config configs/rec.yaml \
   --epochs 30 \
-  --save_path log/best_rec.pth
+  --save_path weights/best_model.pth
 ```
 
 The same command is also available in `train.sh`.
+
+## Pre-trained Checkpoint
+
+The released checkpoint is expected at:
+
+```text
+weights/best_model.pth
+```
+
+To evaluate this checkpoint without starting a new training run:
+
+```bash
+python main.py \
+  --test_only \
+  --testset cdfv2 \
+  --config configs/rec.yaml \
+  --save_path weights/best_model.pth
+```
+
+The checkpoint file is large. If it is uploaded to GitHub, use Git LFS or
+attach it to a GitHub Release instead of committing it as a regular Git
+object. The checkpoint and the code must come from the same model version.
 
 ## Evaluation
 
@@ -124,7 +146,7 @@ python main.py \
   --test_only \
   --testset cdfv2 \
   --config configs/rec.yaml \
-  --save_path log/best_rec.pth
+  --save_path weights/best_model.pth
 ```
 
 The evaluation command is also provided in `test.sh`. Change `--testset` to
@@ -144,8 +166,9 @@ test.sh                 Example evaluation command
 
 ## Notes
 
-Make sure this module is
-available in the repository or on `PYTHONPATH` before running the code.
+During training, reconstruction losses are computed only for real samples.
+Fake samples still pass through the reconstruction module for prediction, but
+do not contribute reconstruction gradients.
 
 ## License
 
