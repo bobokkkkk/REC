@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import argparse
+import random
 import yaml
 import torch
 from torch.optim import AdamW
@@ -20,6 +21,13 @@ from modules.model import RECC
 from noise_utils import add_noise_to_tensor
 
 e_data = []
+
+def set_global_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
 
 def get_extra_data_path(path):
     pics = next(os.walk(path))[2]
@@ -150,13 +158,10 @@ def train(model, train_loader, valid_loader, optimizer, epochs, transform=None, 
             if real_mask.any():
                 real_original = feature_pooled[real_mask]
                 real_reconstructed = rcon_feature_pooled[real_mask]
+                real_crop_original = crop_feature_pooled[real_mask]
+                real_crop_reconstructed = recon_crop_feature_pooled[real_mask]
                 recon_loss = F.mse_loss(real_reconstructed, real_original)
-                fine_grad_loss = F.mse_loss(recon_crop_feature_pooled, crop_feature_pooled)
-
-            if fake_mask.any():
-                fake_original = feature_pooled[fake_mask]
-                fake_reconstructed = rcon_feature_pooled[fake_mask]
-                recon_loss = recon_loss + F.mse_loss(fake_reconstructed, fake_original)
+                fine_grad_loss = F.mse_loss(real_crop_reconstructed, real_crop_original)
 
             if real_mask.any() and e_feature_pooled is not None:
                 real_features = feature_pooled[real_mask]
@@ -335,11 +340,9 @@ def main():
     args = parse_args()
     cfg = load_config(args.config)
 
-    torch.backends.cudnn.benchmark = True
     if args.device == 'cuda' and not torch.cuda.is_available():
         raise RuntimeError("CUDA requested but not available.")
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
+    set_global_seed(args.seed)
 
     extra_data_root = args.extra_data or cfg['paths'].get('extra_data_root', None)
     if extra_data_root:
