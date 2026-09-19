@@ -117,25 +117,14 @@ The same command is also available in `train.sh`.
 
 ## Pre-trained Checkpoint
 
-The released checkpoint is expected at:
+The pre-trained checkpoint is provided through Git LFS at:
 
 ```text
 weights/best_model.pth
 ```
 
-To evaluate this checkpoint without starting a new training run:
-
-```bash
-python main.py \
-  --test_only \
-  --testset cdfv2 \
-  --config configs/rec.yaml \
-  --save_path weights/best_model.pth
-```
-
-The checkpoint file is large. If it is uploaded to GitHub, use Git LFS or
-attach it to a GitHub Release instead of committing it as a regular Git
-object. The checkpoint and the code must come from the same model version.
+After cloning the repository, make sure Git LFS is installed so that the full
+checkpoint file is downloaded correctly.
 
 ## Evaluation
 

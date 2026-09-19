@@ -4,4 +4,4 @@ python main.py \
   -testset cdfv2 \
   -config configs/rec.yaml \
   -epochs 30 \
-  -save_path log/best_rec.pth
+  -save_path weights/best_model.pth
